@@ -1,0 +1,8 @@
+//giroscopio
+https://naylampmechatronics.com/blog/45_Tutorial-MPU6050-Aceler%C3%B3metro-y-Giroscopio.html
+
+//resistencia fotoelectrica
+https://www.geekfactory.mx/tutoriales/tutoriales-arduino/tutorial-arduino-con-fotoresistencia-ldr/
+
+//dht11
+https://programarfacil.com/blog/arduino-blog/sensor-dht11-temperatura-humedad-arduino/
