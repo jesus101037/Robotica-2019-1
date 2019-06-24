@@ -173,8 +173,8 @@ int limiteSuperior;
 void configurarSensor() {
   limiteInferior = 10;
   limiteSuperior = 20;
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+  pinMode(trigPin, OUTPUT); // configuramos trigPin as output
+  pinMode(echoPin, INPUT); // configuramos echoPin as input
 }
 
 void setup() {
