@@ -1,6 +1,3 @@
-//Incluimos libreria para sensor temperatura-humedad
-#include <DHT.h>
-
 //Definimos los pines del motor
 #define IN1  2
 #define IN2  3
@@ -160,56 +157,55 @@ void peligroArriba() {
 //valor leido por sensor
 int valorLeido = 0;
 //pins del sensor
-#define DHTTYPE DHT11   // DHT 11 
-#define pin0 12
+const int trigPin = 7;
+const int echoPin = 8;
+// defines variables
+long duration;
+int distance;
+//#define pin0 12
 //#define pin1 A1
 //#define pin2 A2
 //#define pin3 A3
-DHT dht(pin0, DHTTYPE);
+
 //Definir limites
 int limiteInferior;
 int limiteSuperior;
-void configurarSensorTemp() {
-    limiteInferior = 20;
-    limiteSuperior = 30;
-    pinMode(pin0, INPUT);
+void configurarSensor() {
+  limiteInferior = 10;
+  limiteSuperior = 20;
+  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 }
-void configurarSensorHumedad() {
-    limiteInferior = 40;
-    limiteSuperior = 50;
-    pinMode(pin0, INPUT);
-}
+
 void setup() {
   Serial.begin(9600);
   delay(500);//espera para q encienda
   //inicializar sensor
-  configurarSensorTemp();
+  configurarSensor();
   //inicializar outputs
   configurarPinLeds();
   configurarMotor();
-  delay(1000);//espera para acceder al sensor
-  dht.begin();
 }
 
 void loop() {
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
-
-   // check if returns are valid, if they are NaN (not a number) then something went wrong!
-   if (isnan(t) || isnan(h)) {
-     Serial.println("Failed to read from DHT");
-   } else {
-     Serial.print("Humidity: "); 
-     Serial.print(h);
-     Serial.print(" %\t");
-     Serial.print("Temperature: "); 
-     Serial.print(t);
-     Serial.println(" *C");
-   }
-  if (t <= limiteInferior) {
+  // limpiar trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Poner el trigPin en HIGH por 10 micro
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // leer el echoPin, retorna el tiempo de viaje de la onda de sonido en microsegundos
+  duration = pulseIn(echoPin, HIGH);
+  // Calculating the distance
+  distance= duration*0.038/2;
+  // Prints the distance on the Serial Monitor
+  Serial.print("Distancia: ");
+  Serial.println(distance);
+  if (distance <= limiteInferior) {
       peligroAbajo();
   } else {
-    if (t <= limiteSuperior) {
+    if (distance <= limiteSuperior) {
       todoOK();
     } else {
       peligroArriba();

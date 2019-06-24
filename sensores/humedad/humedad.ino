@@ -215,20 +215,4 @@ void loop() {
       peligroArriba();
     }
   }
-  /*
-  valorLeido = DHT.read11(pinA0); // leer valor del sensor
-  Serial.print("Valor leido: ");
-  Serial.println(DHT.temperature);      // imprimir el valor leido
-  //Verificar estado del sensor y actuar de acuerdo a esos valores
-  if (valorLeido <= limiteInferior) {
-    peligroAbajo();
-  } else {
-    if (valorLeido <= limiteSuperior) {
-      todoOK();
-    } else {
-      peligroArriba();
-    }
-  }
-  delay(2000); 
-  */
 }
