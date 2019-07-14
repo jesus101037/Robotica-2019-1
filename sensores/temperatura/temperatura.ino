@@ -147,13 +147,13 @@ void todoOK() {
 //Metodo para configurar led si los valores estan por debajo de lo permitido
 //motor en direccion de las agujas del reloj
 void peligroAbajo() {
-  colorRGB(255,0,0); //enciende rojo
+  colorRGB(0,0,255); //enciende azul
   clockWise();
 }
 //Metodo para configurar led si los valores estan por encima de lo permitido
 //motor en contra de la direccion de las agujas del reloj
 void peligroArriba() {
-  colorRGB(0,0,255); //enciende azul
+  colorRGB(255,0,0); //enciende rojo
   conterClockWise();
 }
 
@@ -161,7 +161,7 @@ void peligroArriba() {
 int valorLeido = 0;
 //pins del sensor
 #define DHTTYPE DHT11   // DHT 11 
-#define pin0 12
+#define pin0 7
 //#define pin1 A1
 //#define pin2 A2
 //#define pin3 A3
@@ -170,13 +170,13 @@ DHT dht(pin0, DHTTYPE);
 int limiteInferior;
 int limiteSuperior;
 void configurarSensorTemp() {
-    limiteInferior = 20;
-    limiteSuperior = 30;
+    limiteInferior = 12;
+    limiteSuperior = 16;
     pinMode(pin0, INPUT);
 }
 void configurarSensorHumedad() {
-    limiteInferior = 40;
-    limiteSuperior = 50;
+    limiteInferior = 14;
+    limiteSuperior = 20;
     pinMode(pin0, INPUT);
 }
 void setup() {
@@ -192,8 +192,8 @@ void setup() {
 }
 
 void loop() {
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
+  float h = dht.readHumidity()+20;
+  float t = dht.readTemperature()-9;
 
    // check if returns are valid, if they are NaN (not a number) then something went wrong!
    if (isnan(t) || isnan(h)) {

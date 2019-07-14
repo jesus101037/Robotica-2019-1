@@ -167,7 +167,7 @@ int limiteInferior;
 int limiteSuperior;
 void configurarSensor() {
     limiteInferior = 600;
-    limiteSuperior = 1000;
+    limiteSuperior = 800;
 }
 void setup() {
   Serial.begin(57600);
