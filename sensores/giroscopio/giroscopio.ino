@@ -212,6 +212,21 @@ void loop() {
   Serial.print(gx); Serial.print("\t");
   Serial.print(gy); Serial.print("\t");
   Serial.println(gz);
-
-  delay(100);
+  //Ladeo
+  /*
+  if (ay > 1000) {
+    colorRGB(255,0,0); //enciende rojo
+  } else if (ay > 0) {
+    colorRGB(0,0,255); //enciende azul
+  } else {
+    colorRGB(0,255,0); //enciende verde
+  }
+  //*/
+  //giro
+  if () { //sentido horario
+    colorRGB(0,0,255); //enciende azul
+  } else { //giro horario
+    colorRGB(255,255,255); //enciende azul
+  }
+  delay(1000);
 }
