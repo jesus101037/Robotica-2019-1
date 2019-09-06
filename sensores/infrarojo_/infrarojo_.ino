@@ -192,7 +192,7 @@ void loop() {
   } else {
     Serial.print("Todo Bien, lectura: ");
     Serial.println(obstaculo);
-    todoOK();
+    peligroArriba();
   }
-  delay(1000);
+  delay(100);
 }

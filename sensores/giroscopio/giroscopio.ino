@@ -213,20 +213,33 @@ void loop() {
   Serial.print(gy); Serial.print("\t");
   Serial.println(gz);
   //Ladeo
-  /*
-  if (ay > 1000) {
+  ///*
+  if (ay > 1200) {
     colorRGB(255,0,0); //enciende rojo
+    clockWise();
   } else if (ay > 0) {
-    colorRGB(0,0,255); //enciende azul
+    if (ax < -200) {
+      colorRGB(0,0,255);
+      conterClockWise();  
+    } else if (ax > 500) {
+      colorRGB(255,255,0);
+      clockWise();
+    } else {
+      colorRGB(255,255,255); //enciende azul
+      stopMotor();
+    }
   } else {
     colorRGB(0,255,0); //enciende verde
+    conterClockWise();
   }
   //*/
   //giro
+  /*
   if () { //sentido horario
     colorRGB(0,0,255); //enciende azul
   } else { //giro horario
     colorRGB(255,255,255); //enciende azul
   }
-  delay(1000);
+  */
+  delay(100);
 }
