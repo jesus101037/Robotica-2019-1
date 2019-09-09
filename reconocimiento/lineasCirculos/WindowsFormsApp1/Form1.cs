@@ -22,6 +22,7 @@ namespace WindowsFormsApp1
         Bitmap bmp;
 
         bool Ingreso = false;
+        string url;
         bool Hay2Circulos = false;
 
         int tiempoGiro;
@@ -29,10 +30,15 @@ namespace WindowsFormsApp1
         public Form1()
         {
             InitializeComponent();
-            string url = "http://" + obtenerIP() + "/mjpegfeed?640x480";
+            url = "http://" + obtenerIP() + "/mjpegfeed?640x480";
+            log("Stream url: " + url);
             stream = new MJPEGStream(url);
             stream.NewFrame += streamNewFrame;
-            tiempoGiro = 2000;
+        }
+
+        private void log(string mensaje) {
+            rtbConsole.AppendText("\r\n" + mensaje);
+            rtbConsole.ScrollToCaret();
         }
 
         private string obtenerIP() {
@@ -59,21 +65,12 @@ namespace WindowsFormsApp1
             pbProcesado.Image = Mapa;
         }
 
-        delegate void Pasar_Datos(List<string> Datos);
+        delegate void pasarDatos(List<string> Datos);
 
-        private void Mostrar_Datos(List<string> Datos)
+        private void mostrarDatos(List<string> Datos)
         {
             if (Datos.Count == 2)
             {
-                string[] Datos1 = Datos[0].Split('-');
-                lbl_C1X.Text = Datos1[0];
-                lbl_C1Y.Text = Datos1[1];
-                lbl_Radio1.Text = Datos1[2];
-
-                string[] Datos2 = Datos[1].Split('-');
-                lbl_C2X.Text = Datos2[0];
-                lbl_C2Y.Text = Datos2[1];
-                lbl_Radio2.Text = Datos2[2];
                 Hay2Circulos = true;
             }
             else
@@ -91,7 +88,7 @@ namespace WindowsFormsApp1
 
             List<string> Datos = Procesar_Circulos(bmp2);
 
-            Pasar_Datos pd = new Pasar_Datos(Mostrar_Datos);
+            pasarDatos pd = new pasarDatos(mostrarDatos);
             this.Invoke(pd, Datos);
 
             pasarImagen pa = new pasarImagen(mostrarImagen);
@@ -100,47 +97,8 @@ namespace WindowsFormsApp1
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (Hay2Circulos)
-            {
-                //Hacer que el carro gire avance y vuelva a girar
-                if (float.Parse(lbl_Radio1.Text) - float.Parse(lbl_Radio2.Text) > 2)
-                {
-                    double radio1 = double.Parse(lbl_Radio1.Text);
-                    double Distancia1 = 4.5 * 0.22 / radio1 / 100;
-
-                    //lbl_DistanciaCirculo1.Text = Distancia1.ToString();
-
-                    double radio2 = double.Parse(lbl_Radio2.Text);
-                    double Distancia2 = 4.5 * 0.22 / radio2 / 100;
-                    //lbl_DistanciaCirculo2.Text = Distancia2.ToString();
-
-
-                    double Tiempo = Math.Abs(Distancia1 - Distancia2) / 5;
-
-                    Pasar_Distancias pa = new Pasar_Distancias(Mostrar_Distancia);
-                    string a = Distancia1.ToString() + "-" + Distancia2.ToString();
-
-                    this.Invoke(pa, a);
-
-                    //giro a la derecha
-                    serialPort1.Write("d");
-                    System.Threading.Thread.Sleep(tiempoGiro);
-
-                    //avanzar
-                    serialPort1.Write("w");
-                    System.Threading.Thread.Sleep(Convert.ToInt32(Tiempo * 1000));
-
-                    //giro a la izquierda
-                    tiempoGiro += 500;
-                    serialPort1.Write("a");
-                    System.Threading.Thread.Sleep(tiempoGiro);
-
-                }
-                else
-                {
-                    serialPort1.Write("w");
-                }
-            }
+            
+            
 
             backgroundWorker1.Dispose();
             backgroundWorker1.CancelAsync();
@@ -150,12 +108,38 @@ namespace WindowsFormsApp1
         //video
         private void buIniciar_Click(object sender, EventArgs e)
         {
-            stream.Start();
+            try
+            {
+                log("Iniciando stream... ");
+                stream = new MJPEGStream(url);
+                stream.NewFrame += streamNewFrame;
+                stream.Start();
+            }
+            catch (Exception err)
+            {
+                log(err.Message);
+            }
+            finally
+            {
+                log("Stream iniciado");
+            }
         }
 
         private void buTerminar_Click(object sender, EventArgs e)
         {
-            stream.Stop();
+            try
+            {
+                log("Deteniendo stream... ");
+                stream.Stop();
+            }
+            catch (Exception err)
+            {
+                log(err.Message);
+            }
+            finally
+            {
+                log("Stream detenido");
+            }
         }
 
         public Bitmap MostrarAzul(Bitmap Mapa)
@@ -248,6 +232,12 @@ namespace WindowsFormsApp1
             this.Invoke(pa, A);
 
             return Datos;
+        }
+
+        private void nudIP1_ValueChanged(object sender, EventArgs e)
+        {
+            url = "http://" + obtenerIP() + "/mjpegfeed?640x480";
+            log("Stream url: " + url);
         }
     }
 }
