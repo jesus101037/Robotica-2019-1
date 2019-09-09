@@ -34,6 +34,8 @@ namespace WindowsFormsApp1
             log("Stream url: " + url);
             stream = new MJPEGStream(url);
             stream.NewFrame += streamNewFrame;
+            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+            backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
         }
 
         private void log(string mensaje) {
@@ -65,41 +67,113 @@ namespace WindowsFormsApp1
             pbProcesado.Image = Mapa;
         }
 
-        delegate void pasarDatos(List<string> Datos);
-
-        private void mostrarDatos(List<string> Datos)
+        private void obtenerImagen(out Bitmap img)
         {
-            if (Datos.Count == 2)
-            {
-                Hay2Circulos = true;
-            }
-            else
-            {
-                Hay2Circulos = false;
-            }
+            img = new Bitmap(pbInput.Image);
         }
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
-            Bitmap bmp2 = (Bitmap)e.Argument;
+            Bitmap bmp2 = null;
+            Invoke(new Action(() => obtenerImagen(out bmp2)));
 
-            //bmp2 = Escala_Grises_Borde((Bitmap)ImgReducida.Clone());
-            bmp2 = MostrarAzul(bmp2);
+            // Convertir a escala de grises
+            Bitmap imgProcesada = Grayscale.CommonAlgorithms.RMY.Apply(bmp2);
+            // Aplicar filtros
+            CannyEdgeDetector borde = new CannyEdgeDetector();
+            borde.ApplyInPlace(imgProcesada);
 
-            List<string> Datos = Procesar_Circulos(bmp2);
+            // Obtener los centros de la imagen
+            int w2 = imgProcesada.Width / 2;
+            int h2 = imgProcesada.Height / 2;
+            //Definir transformada
+            HoughLineTransformation lineTransform = new HoughLineTransformation();
+            // Aplicar deteccion de lineas
+            lineTransform.ProcessImage(imgProcesada);
+            // Obtener lineas con intensidad relativa
+            HoughLine[] lines = lineTransform.GetLinesByRelativeIntensity(0.35);
 
-            pasarDatos pd = new pasarDatos(mostrarDatos);
-            this.Invoke(pd, Datos);
+            // locate objects using blob counter
+            BlobCounter blobCounter = new BlobCounter();
+            blobCounter.ProcessImage(imgProcesada);
+            Blob[] blobs = blobCounter.GetObjectsInformation();
 
-            pasarImagen pa = new pasarImagen(mostrarImagen);
-            this.Invoke(pa, bmp2);
+            // Creamos un bitmap en blanco
+            Bitmap tempBitmap = new Bitmap(imgProcesada.Width, imgProcesada.Height);
+
+            // Obtenemos sus graficos para modificarlo
+            using (Graphics g = Graphics.FromImage(tempBitmap))
+            {
+                //Dibujamos la imagen original
+                g.DrawImage(imgProcesada, 0, 0);
+
+                //Dibujamos las lineas y circulos
+                foreach (HoughLine line in lines)
+                {
+                    // obtener radio y theta de la linea
+                    int r = line.Radius;
+                    double t = line.Theta;
+
+                    // Verificar si la linea esta en la parte baja de la imagen
+                    if (r < 0)
+                    {
+                        t += 180;
+                        r = -r;
+                    }
+
+                    // convertir gradoa radianes
+                    t = (t / 180) * Math.PI;
+
+                    double x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+
+                    if (line.Theta != 0)
+                    {
+                        // line no vertical
+                        x0 = -w2; // punto mas a la izquierda
+                        x1 = w2;  // punto mas a la derecha
+
+                        // Calcular los valores correspondientes
+                        y0 = (-Math.Cos(t) * x0 + r) / Math.Sin(t);
+                        y1 = (-Math.Cos(t) * x1 + r) / Math.Sin(t);
+                    }
+                    else
+                    {
+                        // linea vertical
+                        x0 = line.Radius;
+                        x1 = line.Radius;
+
+                        y0 = h2;
+                        y1 = -h2;
+                    }
+
+                    // dibujar la linea en la imagen
+                    g.DrawLine(Pens.Red, ((int)x0 + w2), (h2 - (int)y0), ((int)x1 + w2), (h2 - (int)y1));
+                }
+
+                AForge.Math.Geometry.SimpleShapeChecker shapeChecker = new SimpleShapeChecker();
+                for (int i = 0, n = blobs.Length; i < n; i++)
+                {
+                    List<IntPoint> edgePoints = blobCounter.GetBlobsEdgePoints(blobs[i]);
+
+                    AForge.Point center;
+                    float radius;
+
+                    if (shapeChecker.IsCircle(edgePoints, out center, out radius))
+                    {
+                        g.DrawEllipse(new Pen(Color.Green, 2),
+                            (int)(center.X - radius),
+                            (int)(center.Y - radius),
+                            (int)(radius * 2),
+                            (int)(radius * 2));
+                    }
+                }
+
+            }
+            mostrarImagen(tempBitmap);
         }
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            
-            
-
             backgroundWorker1.Dispose();
             backgroundWorker1.CancelAsync();
             backgroundWorker1.RunWorkerAsync(bmp);
@@ -140,98 +214,6 @@ namespace WindowsFormsApp1
             {
                 log("Stream detenido");
             }
-        }
-
-        public Bitmap MostrarAzul(Bitmap Mapa)
-        {
-            Bitmap AuxMapa = Mapa;
-            for (int x = 1; x < AuxMapa.Width - 1; x++)
-            {
-                for (int y = 1; y < AuxMapa.Height - 1; y++)
-                {
-                    Color oc = AuxMapa.GetPixel(x, y);
-                    Color nc = Color.FromArgb(oc.A, 0, 0, oc.B);
-
-                    if ((oc.B > 100) && (oc.G < 100) && (oc.R < 100))
-                    {
-                        nc = Color.FromArgb(oc.A, 0, 0, 255);
-                    }
-                    else if ((oc.R > 100) && (oc.G < 100) && (oc.B < 100))
-                    {
-                        nc = Color.FromArgb(oc.A, 255, 0, 0);
-                    }
-                    else
-                    {
-                        nc = Color.FromArgb(oc.A, 0, 0, 0);
-                    }
-
-                    AuxMapa.SetPixel(x, y, nc);
-                }
-            }
-            return AuxMapa;
-        }
-
-        public List<string> Procesar_Circulos(Bitmap BMP)
-        {
-
-            List<string> Datos = new List<string>();
-
-            Rectangle RECTANGULO = new Rectangle(0, 0, BMP.Width, BMP.Height);
-            BitmapData BMPDATOS = BMP.LockBits(RECTANGULO, ImageLockMode.ReadWrite, BMP.PixelFormat);
-
-            Bitmap A = new Bitmap(BMP.Width, BMP.Height);
-
-            ColorFiltering FILTRO = new ColorFiltering();
-
-            FILTRO.Red = new IntRange(0, 100);
-            FILTRO.Green = new IntRange(0, 100);
-            FILTRO.Blue = new IntRange(0, 100);
-
-            FILTRO.FillOutsideRange = false;
-            FILTRO.ApplyInPlace(BMPDATOS);
-
-            //BUSCA LOS ELEMENTOS
-            BlobCounter ELEMENTOS = new BlobCounter();
-            ELEMENTOS.FilterBlobs = true;
-            ELEMENTOS.MinHeight = 5; //ALTURA MINIMA
-            ELEMENTOS.MinWidth = 5;
-
-            ELEMENTOS.ProcessImage(BMPDATOS);
-
-            Blob[] ELEMENTOSINFO = ELEMENTOS.GetObjectsInformation();
-            BMP.UnlockBits(BMPDATOS);
-
-            SimpleShapeChecker BUSCADOR = new SimpleShapeChecker(); //PARA DETERMINAR LA FORMA DE LOS ELEMENTOS ENCONTRADOS
-            Graphics DIBUJO = Graphics.FromImage(BMP);//PARA DIBUJAR LOS ELEMENTOS
-            Graphics DIBUJO2 = Graphics.FromImage(A);
-
-            Pen CIRCULOS = new Pen(Color.Black, 5); //CIRCULOS
-            Pen TRIANGULOS = new Pen(Color.Black, 5); //TRIANGULOS
-            Pen CUADRILATEROS = new Pen(Color.Black, 5); //CUADRILATEROS
-            Pen TRAZO = new Pen(Color.Red); //'PARA SEÑALIZAR LAS FORMAS
-
-
-            for (int i = 0; i < ELEMENTOSINFO.Length; i++)
-            {
-
-                System.Collections.Generic.List<AForge.IntPoint> PUNTOS = ELEMENTOS.GetBlobsEdgePoints(ELEMENTOSINFO[i]);//'OBTIENE LOS PUNTOS DE LA FORMA
-                AForge.Point CENTRO = new AForge.Point(); //'CENTRO DEL CIRCULO
-                float RADIO = new float(); //'RADIO DEL CIRCULO
-
-                if (BUSCADOR.IsCircle(PUNTOS, out CENTRO, out RADIO))//
-                {//'SI ES UN CIRCULO....
-                    DIBUJO.DrawEllipse(CIRCULOS, (int)Math.Round(CENTRO.X - RADIO), (int)Math.Round(CENTRO.Y - RADIO), (int)Math.Round(RADIO * 2), (int)Math.Round(RADIO * 2));// 'DIBUJA EL CIRCULO
-                    DIBUJO2.DrawEllipse(CIRCULOS, (int)Math.Round(CENTRO.X - RADIO), (int)Math.Round(CENTRO.Y - RADIO), (int)Math.Round(RADIO * 2), (int)Math.Round(RADIO * 2));// 'DIBUJA EL CIRCULO
-
-                    Datos.Add(CENTRO.X + "-" + CENTRO.Y + "-" + RADIO);
-                }
-            }
-
-            //Mostrar_Imagen A
-            pasarImagen pa = new pasarImagen(mostrarImagen);
-            this.Invoke(pa, A);
-
-            return Datos;
         }
 
         private void nudIP1_ValueChanged(object sender, EventArgs e)
